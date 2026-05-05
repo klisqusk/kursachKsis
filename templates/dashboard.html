@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="app-shell">
+    <aside class="sidebar-panel">
+        <div class="sidebar-heading">
+            <p class="eyebrow">Рабочее пространство</p>
+            <h1>{{ current_user.username }}</h1>
+        </div>
+
+        <nav class="side-nav">
+            <a class="side-link {% if view == 'folder' %}active{% endif %}" href="{{ url_for('files.dashboard', folder=current_folder, sort=sort_by) }}">
+                <span>Все файлы</span>
+                <strong>{{ summary.active_files_count }}</strong>
+            </a>
+            <a class="side-link {% if view == 'favorites' %}active{% endif %}" href="{{ url_for('files.dashboard', view='favorites', sort=sort_by) }}">
+                <span>Избранное</span>
+                <strong>{{ summary.favorite_files_count }}</strong>
+            </a>
+            <a class="side-link {% if view == 'trash' %}active{% endif %}" href="{{ url_for('files.dashboard', view='trash', sort=sort_by) }}">
+                <span>Корзина</span>
+                <strong>{{ summary.trash_files_count }}</strong>
+            </a>
+        </nav>
+
+        <div class="quota-box">
+            <div class="quota-line">
+                <span>Занято</span>
+                <strong>{{ storage_info.used|filesize }}</strong>
+            </div>
+            <div class="quota-track" aria-label="Использование хранилища">
+                <span style="width: {{ storage_info.percent }}%"></span>
+            </div>
+            <div class="quota-line muted">
+                <span>Лимит</span>
+                <span>{{ storage_info.quota|filesize }}</span>
+            </div>
+        </div>
+
+        <div class="mini-stats">
+            <div>
+                <span>Активных файлов</span>
+                <strong>{{ summary.active_files_count }}</strong>
+            </div>
+            <div>
+                <span>Свободно</span>
+                <strong>{{ storage_info.available|filesize }}</strong>
+            </div>
+        </div>
+    </aside>
+
+    <section class="file-board">
+        <div class="board-header">
+            <div>
+                <p class="eyebrow">
+                    {% if view == "favorites" %}
+                        Быстрый доступ
+                    {% elif view == "trash" %}
+                        Восстановление файлов
+                    {% else %}
+                        Личный кабинет
+                    {% endif %}
+                </p>
+                <h2>
+                    {% if view == "favorites" %}
+                        Избранные файлы
+                    {% elif view == "trash" %}
+                        Корзина
+                    {% else %}
+                        Файловое хранилище
+                    {% endif %}
+                </h2>
+            </div>
+
+            <form action="{{ url_for('files.dashboard') }}" method="get" class="sort-form">
+                {% if view != "folder" %}
+                    <input type="hidden" name="view" value="{{ view }}">
+                {% endif %}
+                {% if current_folder and view == "folder" %}
+                    <input type="hidden" name="folder" value="{{ current_folder }}">
+                {% endif %}
+                {% if query %}
+                    <input type="hidden" name="q" value="{{ query }}">
+                {% endif %}
+                <label>
+                    Сортировка
+                    <select name="sort" onchange="this.form.submit()">
+                        <option value="name" {% if sort_by == "name" %}selected{% endif %}>по имени</option>
+                        <option value="date" {% if sort_by == "date" %}selected{% endif %}>по дате</option>
+                        <option value="size" {% if sort_by == "size" %}selected{% endif %}>по размеру</option>
+                        <option value="type" {% if sort_by == "type" %}selected{% endif %}>по типу</option>
+                    </select>
+                </label>
+            </form>
+        </div>
+
+        <div class="command-strip">
+            {% if view == "folder" %}
+                <form action="{{ url_for('files.upload') }}" method="post" enctype="multipart/form-data" class="command-form upload-command">
+                    <input type="hidden" name="folder" value="{{ current_folder }}">
+                    <input type="hidden" name="sort" value="{{ sort_by }}">
+                    <label>
+                        Файл
+                        <input type="file" name="file" required>
+                    </label>
+                    <button class="button button-primary" type="submit">Загрузить</button>
+                </form>
+
+                <form action="{{ url_for('files.create_folder') }}" method="post" class="command-form">
+                    <input type="hidden" name="folder" value="{{ current_folder }}">
+                    <input type="hidden" name="sort" value="{{ sort_by }}">
+                    <label>
+                        Папка
+                        <input type="text" name="folder_name" placeholder="documents" required>
+                    </label>
+                    <button class="button button-secondary" type="submit">Создать</button>
+                </form>
+            {% endif %}
+
+            <form action="{{ url_for('files.search') }}" method="get" class="search-form">
+                <input type="hidden" name="folder" value="{{ current_folder }}">
+                <input type="hidden" name="view" value="{{ view }}">
+                <input type="hidden" name="sort" value="{{ sort_by }}">
+                <input type="search" name="q" value="{{ query }}" placeholder="Найти файл по названию">
+                <button class="button button-outline" type="submit">Найти</button>
+                {% if query %}
+                    <a class="button button-ghost" href="{{ url_for('files.dashboard', folder=current_folder if view == 'folder' else None, view=view if view != 'folder' else None, sort=sort_by) }}">Сбросить</a>
+                {% endif %}
+            </form>
+        </div>
+
+        {% if view == "folder" and not query %}
+            <nav class="breadcrumbs" aria-label="Путь к папке">
+                {% for crumb in breadcrumbs %}
+                    {% if loop.last %}
+                        <span>{{ crumb.name }}</span>
+                    {% else %}
+                        <a href="{{ url_for('files.dashboard', folder=crumb.path, sort=sort_by) }}">{{ crumb.name }}</a>
+                    {% endif %}
+                {% endfor %}
+            </nav>
+
+            {% if folders %}
+                <div class="folder-grid">
+                    {% for folder in folders %}
+                        <a class="folder-item" href="{{ url_for('files.dashboard', folder=folder.path, sort=sort_by) }}">
+                            <span class="folder-icon"></span>
+                            <span>{{ folder.name }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% elif query %}
+            <div class="result-line">
+                Результаты поиска: <strong>{{ query }}</strong>
+            </div>
+        {% endif %}
+
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Файл</th>
+                        <th>Раздел</th>
+                        <th>Размер</th>
+                        <th>Тип</th>
+                        <th>Дата</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in files %}
+                        <tr>
+                            <td>
+                                <div class="file-cell">
+                                    <span class="file-token {{ file.category }}">{{ file.extension[1:4] if file.extension else "file" }}</span>
+                                    <div>
+                                        <strong>{{ file.original_name }}</strong>
+                                        <span>{{ file.stored_name[:18] }}...</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ file.folder or "Главная" }}</td>
+                            <td>{{ file.size|filesize }}</td>
+                            <td><span class="type-badge">{{ file.category }}</span></td>
+                            <td>{{ (file.deleted_at if file.is_deleted else file.uploaded_at)|datetime }}</td>
+                            <td>
+                                {% if file.is_deleted %}
+                                    <span class="status-badge danger">в корзине</span>
+                                {% elif file.is_favorite %}
+                                    <span class="status-badge accent">избранное</span>
+                                {% else %}
+                                    <span class="status-badge">активен</span>
+                                {% endif %}
+                            </td>
+                            <td class="actions-cell">
+                                {% if file.is_deleted %}
+                                    <form action="{{ url_for('files.restore', file_id=file.id) }}" method="post" class="inline-form">
+                                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                                        <button class="button button-small button-secondary" type="submit">Восстановить</button>
+                                    </form>
+                                    <form action="{{ url_for('files.destroy', file_id=file.id) }}" method="post" class="inline-form">
+                                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                                        <button class="button button-small button-danger" type="submit">Удалить навсегда</button>
+                                    </form>
+                                    <a class="button button-small button-ghost" href="{{ url_for('files.file_info', file_id=file.id) }}">Инфо</a>
+                                {% else %}
+                                    <a class="button button-small button-outline" href="{{ url_for('files.download', file_id=file.id) }}">Скачать</a>
+                                    <a class="button button-small button-ghost" href="{{ url_for('files.file_info', file_id=file.id) }}">Инфо</a>
+
+                                    <form action="{{ url_for('files.favorite', file_id=file.id) }}" method="post" class="inline-form">
+                                        <input type="hidden" name="folder" value="{{ current_folder }}">
+                                        <input type="hidden" name="view" value="{{ view }}">
+                                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                                        <button class="button button-small button-ghost" type="submit">
+                                            {{ "Убрать" if file.is_favorite else "В избранное" }}
+                                        </button>
+                                    </form>
+
+                                    <form action="{{ url_for('files.rename', file_id=file.id) }}" method="post" class="inline-form">
+                                        <input type="hidden" name="folder" value="{{ current_folder }}">
+                                        <input type="hidden" name="view" value="{{ view }}">
+                                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                                        <input type="text" name="new_name" value="{{ file.original_name }}" aria-label="Новое имя файла" required>
+                                        <button class="button button-small button-secondary" type="submit">OK</button>
+                                    </form>
+
+                                    <form action="{{ url_for('files.move', file_id=file.id) }}" method="post" class="inline-form">
+                                        <input type="hidden" name="folder" value="{{ current_folder }}">
+                                        <input type="hidden" name="view" value="{{ view }}">
+                                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                                        <select name="target_folder" aria-label="Папка назначения">
+                                            {% for folder_option in all_folders %}
+                                                <option value="{{ folder_option.path }}" {% if folder_option.path == file.folder %}selected{% endif %}>
+                                                    {{ folder_option.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        <button class="button button-small button-secondary" type="submit">Переместить</button>
+                                    </form>
+
+                                    <form action="{{ url_for('files.delete', file_id=file.id) }}" method="post" class="inline-form">
+                                        <input type="hidden" name="folder" value="{{ current_folder }}">
+                                        <input type="hidden" name="view" value="{{ view }}">
+                                        <input type="hidden" name="sort" value="{{ sort_by }}">
+                                        <button class="button button-small button-danger" type="submit">В корзину</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="empty-state">
+                                {% if view == "trash" %}
+                                    Корзина пуста.
+                                {% elif view == "favorites" %}
+                                    В избранном пока нет файлов.
+                                {% else %}
+                                    Здесь пока нет файлов.
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}

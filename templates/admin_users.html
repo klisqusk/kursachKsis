@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section-header">
+    <div>
+        <p class="eyebrow">Администрирование</p>
+        <h1>Пользователи</h1>
+    </div>
+    <a class="button button-outline" href="{{ url_for('admin.dashboard') }}">К статистике</a>
+</section>
+
+<section class="workspace">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Имя</th>
+                    <th>Email</th>
+                    <th>Роль</th>
+                    <th>Создан</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.role }}</td>
+                        <td>{{ user.created_at|datetime }}</td>
+                        <td>{{ "заблокирован" if user.is_blocked else "активен" }}</td>
+                        <td class="actions-cell">
+                            {% if user.id != current_user.id and not user.is_admin %}
+                                <form action="{{ url_for('admin.block_user') }}" method="post" class="inline-form">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <input type="hidden" name="is_blocked" value="{{ 0 if user.is_blocked else 1 }}">
+                                    <button class="button button-small button-secondary" type="submit">
+                                        {{ "Разблокировать" if user.is_blocked else "Заблокировать" }}
+                                    </button>
+                                </form>
+
+                                <form action="{{ url_for('admin.delete_user') }}" method="post" class="inline-form">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <button class="button button-small button-danger" type="submit">Удалить</button>
+                                </form>
+                            {% else %}
+                                <span class="muted">недоступно</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="empty-state">Пользователей пока нет.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

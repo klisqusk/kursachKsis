@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section-header">
+    <div>
+        <p class="eyebrow">Администрирование</p>
+        <h1>Панель управления</h1>
+    </div>
+    <div class="page-actions">
+        <a class="button button-outline" href="{{ url_for('admin.users') }}">Пользователи</a>
+        <a class="button button-outline" href="{{ url_for('admin.logs') }}">Журнал</a>
+    </div>
+</section>
+
+<section class="stats-grid">
+    <div class="stat-item">
+        <span>Пользователей</span>
+        <strong>{{ statistics.users_count }}</strong>
+    </div>
+    <div class="stat-item">
+        <span>Активных файлов</span>
+        <strong>{{ statistics.files_count }}</strong>
+    </div>
+    <div class="stat-item">
+        <span>Занято места</span>
+        <strong>{{ statistics.total_size|filesize }}</strong>
+    </div>
+    <div class="stat-item">
+        <span>Заблокировано</span>
+        <strong>{{ statistics.blocked_users_count }}</strong>
+    </div>
+    <div class="stat-item">
+        <span>В корзине</span>
+        <strong>{{ statistics.deleted_files_count }}</strong>
+    </div>
+    <div class="stat-item">
+        <span>Избранных</span>
+        <strong>{{ statistics.favorite_files_count }}</strong>
+    </div>
+    <div class="stat-item">
+        <span>Средний размер</span>
+        <strong>{{ statistics.average_file_size|filesize }}</strong>
+    </div>
+</section>
+
+<section class="workspace">
+    <div class="subheader">
+        <h2>Последние действия</h2>
+        <a href="{{ url_for('admin.logs') }}">Открыть весь журнал</a>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Пользователь</th>
+                    <th>Действие</th>
+                    <th>Описание</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_logs %}
+                    <tr>
+                        <td>{{ log.created_at|datetime }}</td>
+                        <td>{{ log.username }}</td>
+                        <td>{{ log.action }}</td>
+                        <td>{{ log.details }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="empty-state">Журнал пока пуст.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

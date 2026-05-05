@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-layout">
+    <div class="auth-panel">
+        <p class="eyebrow">Облачное хранилище</p>
+        <h1>Вход в CloudBox</h1>
+        <p class="muted">Введите email и пароль, чтобы открыть личное файловое пространство.</p>
+
+        <form method="post" class="form-stack">
+            <label>
+                Email
+                <input type="email" name="email" required autocomplete="email">
+            </label>
+
+            <label>
+                Пароль
+                <input type="password" name="password" required autocomplete="current-password">
+            </label>
+
+            <button class="button button-primary full-width" type="submit">Войти</button>
+        </form>
+
+        <p class="form-note">Нет аккаунта? <a href="{{ url_for('auth.register') }}">Зарегистрироваться</a></p>
+        <p class="form-note muted">Администратор по умолчанию: admin@cloudbox.local / admin12345</p>
+    </div>
+</section>
+{% endblock %}

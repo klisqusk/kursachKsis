@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section-header">
+    <div>
+        <p class="eyebrow">Сведения о файле</p>
+        <h1>{{ file_item.original_name }}</h1>
+    </div>
+    {% if file_item.is_deleted %}
+        <a class="button button-outline" href="{{ url_for('files.dashboard', view='trash') }}">Назад</a>
+    {% else %}
+        <a class="button button-outline" href="{{ url_for('files.dashboard', folder=file_item.folder) }}">Назад</a>
+    {% endif %}
+</section>
+
+<section class="details-grid">
+    <div class="detail-row">
+        <span>Имя файла</span>
+        <strong>{{ file_item.original_name }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Размер</span>
+        <strong>{{ file_item.size|filesize }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Расширение</span>
+        <strong>{{ file_item.extension or "без расширения" }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Категория</span>
+        <strong>{{ file_item.category }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Папка</span>
+        <strong>{{ file_item.folder or "Главная" }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Дата загрузки</span>
+        <strong>{{ file_item.uploaded_at|datetime }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>ID владельца</span>
+        <strong>{{ file_item.user_id }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Файл на сервере</span>
+        <strong>{{ "найден" if file_exists else "не найден" }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Избранное</span>
+        <strong>{{ "да" if file_item.is_favorite else "нет" }}</strong>
+    </div>
+    <div class="detail-row">
+        <span>Статус</span>
+        <strong>{{ "в корзине" if file_item.is_deleted else "активен" }}</strong>
+    </div>
+    {% if file_item.deleted_at %}
+        <div class="detail-row">
+            <span>Дата удаления</span>
+            <strong>{{ file_item.deleted_at|datetime }}</strong>
+        </div>
+    {% endif %}
+</section>
+
+<div class="page-actions">
+    {% if file_item.is_deleted %}
+        <form action="{{ url_for('files.restore', file_id=file_item.id) }}" method="post">
+            <button class="button button-secondary" type="submit">Восстановить</button>
+        </form>
+    {% else %}
+        <a class="button button-primary" href="{{ url_for('files.download', file_id=file_item.id) }}">Скачать файл</a>
+    {% endif %}
+</div>
+{% endblock %}

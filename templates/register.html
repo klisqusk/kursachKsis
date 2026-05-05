@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-layout">
+    <div class="auth-panel">
+        <p class="eyebrow">Новый пользователь</p>
+        <h1>Регистрация</h1>
+        <p class="muted">Создайте учетную запись для хранения файлов на сервере.</p>
+
+        <form method="post" class="form-stack">
+            <label>
+                Имя пользователя
+                <input type="text" name="username" required autocomplete="username">
+            </label>
+
+            <label>
+                Email
+                <input type="email" name="email" required autocomplete="email">
+            </label>
+
+            <label>
+                Пароль
+                <input type="password" name="password" required autocomplete="new-password">
+            </label>
+
+            <label>
+                Повтор пароля
+                <input type="password" name="password_repeat" required autocomplete="new-password">
+            </label>
+
+            <button class="button button-primary full-width" type="submit">Зарегистрироваться</button>
+        </form>
+
+        <p class="form-note">Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войти</a></p>
+    </div>
+</section>
+{% endblock %}

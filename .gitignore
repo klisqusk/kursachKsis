@@ -1,0 +1,55 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build and packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Tests, coverage and linters
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Flask/local configuration
+instance/
+.webassets-cache
+.env
+.env.*
+!.env.example
+
+# IDE/editor files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Runtime logs
+*.log
+logs/
+
+# CloudBox runtime data
+storage/users/*
+storage/uploads/*
+data/*.json
+
+# Keep optional directory placeholders and sample data in Git
+!storage/.gitkeep
+!storage/users/.gitkeep
+!storage/uploads/.gitkeep
+!data/.gitkeep
+!data/*.example.json

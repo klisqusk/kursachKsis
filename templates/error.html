@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-layout">
+    <div class="auth-panel">
+        <p class="eyebrow">Ошибка</p>
+        <h1>{{ title }}</h1>
+        <p class="muted">{{ message }}</p>
+        <a class="button button-primary full-width" href="{{ url_for('index') }}">На главную</a>
+    </div>
+</section>
+{% endblock %}

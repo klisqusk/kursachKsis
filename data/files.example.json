@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "user_id": 1,
+    "original_name": "report.docx",
+    "stored_name": "a8f92_report.docx",
+    "folder": "documents",
+    "size": 245760,
+    "extension": ".docx",
+    "uploaded_at": "2026-05-04 12:30:00",
+    "category": "document",
+    "is_favorite": false,
+    "is_deleted": false,
+    "deleted_at": null
+  }
+]
