@@ -9,6 +9,7 @@ from config import Config
 from models.file_item import FileItem
 from repositories.file_repository import FileRepository
 from services.log_service import LogService
+from utils.formatters import format_size
 
 
 class FileService:
@@ -149,6 +150,14 @@ class FileService:
         target_path = target_folder / stored_name
         uploaded_file.save(target_path)
         file_size = target_path.stat().st_size
+        if file_size > Config.UPLOAD_MAX_BYTES:
+            target_path.unlink(missing_ok=True)
+            return (
+                False,
+                f"Размер файла превышает лимит {format_size(Config.UPLOAD_MAX_BYTES)}.",
+                None,
+            )
+
         storage_info = self.get_storage_info(user.id)
         if storage_info["used"] + file_size > storage_info["quota"]:
             target_path.unlink(missing_ok=True)
@@ -183,6 +192,25 @@ class FileService:
         path.mkdir(parents=True, exist_ok=False)
         self.log_service.add(user, "create_folder", f"Создана папка {new_folder}")
         return True, "Папка создана.", new_folder
+
+    def delete_folder(self, user, folder):
+        folder = self.normalize_folder(folder)
+        if not folder:
+            return False, "Главную папку удалить нельзя."
+
+        path = self._folder_path(user.id, folder)
+        if not path.exists() or not path.is_dir():
+            return False, "Папка не найдена."
+
+        if self._folder_has_files(user.id, folder):
+            return False, "В папке есть файлы. Сначала удалите их или очистите корзину."
+
+        if any(path.iterdir()):
+            return False, "Папка не пуста."
+
+        path.rmdir()
+        self.log_service.add(user, "delete_folder", f"Удалена папка {folder}")
+        return True, "Папка удалена."
 
     def get_file_info(self, user_id, file_id, include_deleted=False):
         return self.file_repository.get_user_file(user_id, file_id, include_deleted=include_deleted)
@@ -224,6 +252,24 @@ class FileService:
         self.file_repository.delete_file(file_item.id)
         self.log_service.add(user, "destroy", f"Файл {file_item.original_name} удален окончательно")
         return True, "Файл удален окончательно."
+
+    def empty_trash(self, user):
+        deleted_files = self.file_repository.get_user_files(
+            user.id,
+            folder=None,
+            only_deleted=True,
+        )
+        if not deleted_files:
+            return False, "Корзина уже пуста."
+
+        for file_item in deleted_files:
+            file_path = self.get_file_path(file_item)
+            if file_path.exists():
+                file_path.unlink()
+            self.file_repository.delete_file(file_item.id)
+
+        self.log_service.add(user, "empty_trash", f"Очищена корзина: {len(deleted_files)} файлов")
+        return True, f"Корзина очищена. Удалено файлов: {len(deleted_files)}."
 
     def toggle_favorite(self, user, file_id):
         file_item = self.file_repository.get_user_file(user.id, file_id)
@@ -296,6 +342,9 @@ class FileService:
 
     def clean_path_part(self, value):
         value = (value or "").strip()
+        if "/" in value or "\\" in value:
+            raise ValueError("Имя папки не должно содержать разделители пути.")
+
         cleaned = "".join(
             char
             for char in value
@@ -338,6 +387,19 @@ class FileService:
     def _relative_folder(self, user_id, path):
         root = self._user_root(user_id)
         return path.relative_to(root).as_posix()
+
+    def _folder_has_files(self, user_id, folder):
+        folder = self.normalize_folder(folder)
+        prefix = f"{folder}/"
+        files = self.file_repository.get_user_files(
+            user_id,
+            folder=None,
+            include_deleted=True,
+        )
+        return any(
+            file_item.folder == folder or file_item.folder.startswith(prefix)
+            for file_item in files
+        )
 
     @staticmethod
     def _now():

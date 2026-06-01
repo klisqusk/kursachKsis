@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit
+
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
 
 from config import Config
@@ -10,6 +12,18 @@ auth_bp = Blueprint("auth", __name__)
 user_repository = UserRepository(Config.USERS_FILE)
 auth_service = AuthService(user_repository)
 log_service = LogService()
+
+
+def _safe_next_url(next_url):
+    if not next_url:
+        return None
+
+    parsed = urlsplit(next_url)
+    if parsed.scheme or parsed.netloc:
+        return None
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        return None
+    return next_url
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -47,7 +61,7 @@ def login():
             session.clear()
             session["user_id"] = user.id
             log_service.add(user, "login", "Пользователь вошел в систему")
-            next_url = request.args.get("next")
+            next_url = _safe_next_url(request.args.get("next"))
             return redirect(next_url or url_for("files.dashboard"))
 
     return render_template("login.html", title="Вход")

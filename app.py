@@ -1,6 +1,7 @@
 import os
 
-from flask import Flask, g, redirect, render_template, request, session, url_for
+from flask import Flask, flash, g, redirect, render_template, request, session, url_for
+from werkzeug.exceptions import RequestEntityTooLarge
 
 from config import Config
 from repositories.user_repository import UserRepository
@@ -27,7 +28,10 @@ def create_app():
 
     @app.context_processor
     def inject_current_user():
-        return {"current_user": getattr(g, "current_user", None)}
+        return {
+            "current_user": getattr(g, "current_user", None),
+            "upload_max_bytes": Config.UPLOAD_MAX_BYTES,
+        }
 
     @app.template_filter("filesize")
     def filesize_filter(value):
@@ -43,16 +47,21 @@ def create_app():
             return redirect(url_for("files.dashboard"))
         return redirect(url_for("auth.login"))
 
-    @app.errorhandler(413)
+    @app.errorhandler(RequestEntityTooLarge)
     def file_too_large(error):
+        message = (
+            "Размер загружаемого файла превышает ограничение "
+            f"{format_size(Config.UPLOAD_MAX_BYTES)}."
+        )
+        if getattr(g, "current_user", None):
+            flash(message, "danger")
+            return redirect(url_for("files.dashboard"))
+
         return (
             render_template(
                 "error.html",
                 title="Файл слишком большой",
-                message=(
-                    "Размер загружаемого файла превышает ограничение "
-                    f"{format_size(Config.MAX_CONTENT_LENGTH)}."
-                ),
+                message=message,
             ),
             413,
         )
@@ -79,5 +88,5 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5001))
+    port = int(os.environ.get("PORT", 5002))
     app.run(debug=True, port=port)

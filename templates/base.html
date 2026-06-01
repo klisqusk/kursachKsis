@@ -4,13 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ title or "CloudBox" }} | CloudBox</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <header class="topbar">
         <a class="brand" href="{{ url_for('files.dashboard') if current_user else url_for('auth.login') }}">
-            <span class="brand-mark">C</span>
-            <span>CloudBox</span>
+            <img class="brand-logo" src="{{ url_for('static', filename='img/logo.svg') }}" alt="CloudBox logo">
+            <span class="brand-word">cloudbox</span>
         </a>
 
         <nav class="nav">

@@ -9,11 +9,20 @@ from flask import (
     url_for,
 )
 
+from config import Config
 from services.file_service import FileService
 from routes.decorators import login_required
+from utils.formatters import format_size
 
 files_bp = Blueprint("files", __name__)
 file_service = FileService()
+
+
+def _upload_request_too_large():
+    content_length = request.content_length
+    if not content_length:
+        return False
+    return content_length > Config.UPLOAD_MAX_BYTES + Config.UPLOAD_FORM_OVERHEAD_BYTES
 
 
 def _redirect_to_dashboard(folder="", query=None, view="folder", sort_by="name"):
@@ -80,19 +89,25 @@ def dashboard():
 @files_bp.route("/upload", methods=["POST"])
 @login_required
 def upload():
+    if _upload_request_too_large():
+        flash(f"Размер файла превышает лимит {format_size(Config.UPLOAD_MAX_BYTES)}.", "danger")
+        return _redirect_to_dashboard()
+
     folder = request.form.get("folder", "")
     sort_by = request.form.get("sort", "name")
+    redirect_folder = ""
     try:
+        redirect_folder = file_service.normalize_folder(folder)
         success, message, _file_item = file_service.upload_file(
             g.current_user,
             request.files.get("file"),
-            folder,
+            redirect_folder,
         )
         flash(message, "success" if success else "danger")
     except ValueError as error:
         flash(str(error), "danger")
 
-    return _redirect_to_dashboard(folder, sort_by=sort_by)
+    return _redirect_to_dashboard(redirect_folder, sort_by=sort_by)
 
 
 @files_bp.route("/download/<int:file_id>")
@@ -137,6 +152,15 @@ def destroy(file_id):
     sort_by = request.form.get("sort", "name")
     success, message = file_service.permanent_delete_file(g.current_user, file_id)
     flash(message, "success" if success else "danger")
+    return _redirect_to_dashboard(view="trash", sort_by=sort_by)
+
+
+@files_bp.route("/trash/empty", methods=["POST"])
+@login_required
+def empty_trash():
+    sort_by = request.form.get("sort", "name")
+    success, message = file_service.empty_trash(g.current_user)
+    flash(message, "success" if success else "info")
     return _redirect_to_dashboard(view="trash", sort_by=sort_by)
 
 
@@ -187,17 +211,36 @@ def create_folder():
     current_folder = request.form.get("folder", "")
     sort_by = request.form.get("sort", "name")
     folder_name = request.form.get("folder_name", "")
+    redirect_folder = ""
     try:
+        redirect_folder = file_service.normalize_folder(current_folder)
         success, message, _new_folder = file_service.create_folder(
             g.current_user,
-            current_folder,
+            redirect_folder,
             folder_name,
         )
         flash(message, "success" if success else "danger")
     except ValueError as error:
         flash(str(error), "danger")
 
-    return _redirect_to_dashboard(current_folder, sort_by=sort_by)
+    return _redirect_to_dashboard(redirect_folder, sort_by=sort_by)
+
+
+@files_bp.route("/folder/delete", methods=["POST"])
+@login_required
+def delete_folder():
+    current_folder = request.form.get("current_folder", "")
+    target_folder = request.form.get("target_folder", "")
+    sort_by = request.form.get("sort", "name")
+    redirect_folder = ""
+    try:
+        redirect_folder = file_service.normalize_folder(current_folder)
+        success, message = file_service.delete_folder(g.current_user, target_folder)
+        flash(message, "success" if success else "danger")
+    except ValueError as error:
+        flash(str(error), "danger")
+
+    return _redirect_to_dashboard(redirect_folder, sort_by=sort_by)
 
 
 @files_bp.route("/search")

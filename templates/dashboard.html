@@ -95,25 +95,35 @@
         </div>
 
         <div class="command-strip">
-            {% if view == "folder" %}
-                <form action="{{ url_for('files.upload') }}" method="post" enctype="multipart/form-data" class="command-form upload-command">
-                    <input type="hidden" name="folder" value="{{ current_folder }}">
-                    <input type="hidden" name="sort" value="{{ sort_by }}">
-                    <label>
-                        Файл
-                        <input type="file" name="file" required>
-                    </label>
-                    <button class="button button-primary" type="submit">Загрузить</button>
-                </form>
+            {% set upload_folder = current_folder if view == "folder" else "" %}
+            <form action="{{ url_for('files.upload') }}" method="post" enctype="multipart/form-data" class="command-form upload-command">
+                <input type="hidden" name="folder" value="{{ upload_folder }}">
+                <input type="hidden" name="sort" value="{{ sort_by }}">
+                <label>
+                    Файл
+                    <input type="file" name="file" required aria-describedby="upload-help">
+                    <span class="field-hint" id="upload-help">
+                        До {{ upload_max_bytes|filesize }} за файл, папка: {{ upload_folder or "Главная" }}.
+                    </span>
+                </label>
+                <button class="button button-primary" type="submit">Загрузить</button>
+            </form>
 
+            {% if view == "folder" %}
                 <form action="{{ url_for('files.create_folder') }}" method="post" class="command-form">
                     <input type="hidden" name="folder" value="{{ current_folder }}">
                     <input type="hidden" name="sort" value="{{ sort_by }}">
                     <label>
                         Папка
                         <input type="text" name="folder_name" placeholder="documents" required>
+                        <span class="field-hint">Создается внутри текущего раздела.</span>
                     </label>
                     <button class="button button-secondary" type="submit">Создать</button>
+                </form>
+            {% elif view == "trash" and summary.trash_files_count %}
+                <form action="{{ url_for('files.empty_trash') }}" method="post" class="command-form" onsubmit="return confirm('Очистить корзину без возможности восстановления?')">
+                    <input type="hidden" name="sort" value="{{ sort_by }}">
+                    <button class="button button-danger" type="submit">Очистить корзину</button>
                 </form>
             {% endif %}
 
@@ -143,10 +153,18 @@
             {% if folders %}
                 <div class="folder-grid">
                     {% for folder in folders %}
-                        <a class="folder-item" href="{{ url_for('files.dashboard', folder=folder.path, sort=sort_by) }}">
-                            <span class="folder-icon"></span>
-                            <span>{{ folder.name }}</span>
-                        </a>
+                        <div class="folder-item">
+                            <a class="folder-open" href="{{ url_for('files.dashboard', folder=folder.path, sort=sort_by) }}">
+                                <span class="folder-icon"></span>
+                                <span>{{ folder.name }}</span>
+                            </a>
+                            <form action="{{ url_for('files.delete_folder') }}" method="post" class="folder-delete-form" onsubmit="return confirm('Удалить пустую папку?')">
+                                <input type="hidden" name="current_folder" value="{{ current_folder }}">
+                                <input type="hidden" name="target_folder" value="{{ folder.path }}">
+                                <input type="hidden" name="sort" value="{{ sort_by }}">
+                                <button class="button button-small button-ghost" type="submit" aria-label="Удалить папку {{ folder.name }}">Удалить</button>
+                            </form>
+                        </div>
                     {% endfor %}
                 </div>
             {% endif %}
@@ -200,7 +218,7 @@
                                         <input type="hidden" name="sort" value="{{ sort_by }}">
                                         <button class="button button-small button-secondary" type="submit">Восстановить</button>
                                     </form>
-                                    <form action="{{ url_for('files.destroy', file_id=file.id) }}" method="post" class="inline-form">
+                                    <form action="{{ url_for('files.destroy', file_id=file.id) }}" method="post" class="inline-form" onsubmit="return confirm('Удалить файл навсегда?')">
                                         <input type="hidden" name="sort" value="{{ sort_by }}">
                                         <button class="button button-small button-danger" type="submit">Удалить навсегда</button>
                                     </form>

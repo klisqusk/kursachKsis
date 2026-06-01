@@ -13,7 +13,13 @@ class Config:
     LOGS_FILE = DATA_DIR / "logs.json"
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "cloudbox-dev-secret-key")
-    MAX_CONTENT_LENGTH = 50 * 1024 * 1024
+    UPLOAD_MAX_BYTES = int(os.environ.get("UPLOAD_MAX_BYTES", 200 * 1024 * 1024))
+    UPLOAD_FORM_OVERHEAD_BYTES = int(
+        os.environ.get("UPLOAD_FORM_OVERHEAD_BYTES", 5 * 1024 * 1024)
+    )
+    MAX_CONTENT_LENGTH = int(
+        os.environ.get("MAX_CONTENT_LENGTH", UPLOAD_MAX_BYTES + 512 * 1024 * 1024)
+    )
 
     DEFAULT_ADMIN_USERNAME = os.environ.get("DEFAULT_ADMIN_USERNAME", "admin")
     DEFAULT_ADMIN_EMAIL = os.environ.get("DEFAULT_ADMIN_EMAIL", "admin@cloudbox.local")
